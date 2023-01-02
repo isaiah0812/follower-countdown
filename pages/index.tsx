@@ -3,7 +3,8 @@ import Image from 'next/image'
 import { Inter } from '@next/font/google'
 import styles from '../styles/Home.module.css'
 import { useMantineTheme, RingProgress, Text } from '@mantine/core'
-import { getBaseColor } from '../utils/helpers'
+import { getBaseColor, instagramColor, tiktokColor, twitchColor, twitterColor, youtubeColor } from '../utils/helpers'
+import { getPercentage } from '../utils/calculators'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -28,10 +29,13 @@ export default function Home() {
               420.69K
             </Text>
           }
+          // TODO REMOVE * 100 (only there for visibility)
           sections={[
-            { value: 40, color: getBaseColor('light-blue'), tooltip: 'Social 1 - 100K' },
-            { value: 20, color: getBaseColor('off-white'), tooltip: 'Social 2 - 160.3K'},
-            { value: 20, color: getBaseColor('ruby'), tooltip: 'Social 3 - 160.3K' },
+            { value: getPercentage(510)* 100, color: instagramColor, tooltip: 'Instagram - 160.3K'},
+            { value: getPercentage(168)* 100, color: twitterColor, tooltip: 'Twitter - 100K' },
+            { value: getPercentage(72128), color: tiktokColor, tooltip: 'TikTok - 160.3K' },
+            { value: getPercentage(85)* 100, color: youtubeColor, tooltip: 'YouTube - 160.3K' },
+            { value: getPercentage(2)* 100, color: twitchColor, tooltip: 'Twitch - 160.3K' }
           ]}
         />
       </main>

@@ -78,7 +78,8 @@ export default function App({ Component, pageProps }: AppProps) {
             '#00010C',
             '#00010A',
             '#000108',
-          ]
+          ],
+          'tik-tok': [ '#00F2EA', '#FF0050' ]
         },
         primaryColor: 'light-blue'
       }}
