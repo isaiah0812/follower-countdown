@@ -1,15 +1,24 @@
 import Head from 'next/head'
 import Image from 'next/image'
-import { Inter } from '@next/font/google'
 import styles from '../styles/Home.module.css'
 import { useMantineTheme, RingProgress, Text } from '@mantine/core'
 import { getBaseColor, instagramColor, tiktokColor, twitchColor, twitterColor, youtubeColor } from '../utils/helpers'
 import { getPercentage } from '../utils/calculators'
+import { twitterClient } from '../config/twitter'
+import { GetStaticProps } from 'next'
+import { youtube_v3 } from '@googleapis/youtube'
 
-const inter = Inter({ subsets: ['latin'] })
+type Stats = {
+  instagram: number,
+  twitter: number,
+  tiktok: number,
+  youtube: number,
+  twitch: number
+}
 
-export default function Home() {
+export default function Home({ stats }: StaticProps) {
   const theme = useMantineTheme();
+  const { instagram, twitter, tiktok, twitch, youtube } = stats;
 
   return (
     <>
@@ -29,16 +38,99 @@ export default function Home() {
               420.69K
             </Text>
           }
-          // TODO REMOVE * 100 (only there for visibility)
+
+          // TODO REMOVE multipliers (only there for visibility)
           sections={[
-            { value: getPercentage(510)* 100, color: instagramColor, tooltip: 'Instagram - 160.3K'},
-            { value: getPercentage(168)* 100, color: twitterColor, tooltip: 'Twitter - 100K' },
-            { value: getPercentage(72128), color: tiktokColor, tooltip: 'TikTok - 160.3K' },
-            { value: getPercentage(85)* 100, color: youtubeColor, tooltip: 'YouTube - 160.3K' },
-            { value: getPercentage(2)* 100, color: twitchColor, tooltip: 'Twitch - 160.3K' }
+            { value: getPercentage(instagram) + 10, color: instagramColor, tooltip: `Instagram - ${instagram}`},
+            { value: getPercentage(twitter)* 500, color: twitterColor, tooltip: `Twitter - ${twitter}` },
+            { value: getPercentage(tiktok) + 10, color: tiktokColor, tooltip: `TikTok - ${tiktok}` },
+            { value: getPercentage(youtube)* 500, color: youtubeColor, tooltip: `YouTube - ${youtube}` },
+            { value: getPercentage(twitch * 100)* 500, color: twitchColor, tooltip: `Twitch - ${twitch}` }
           ]}
         />
       </main>
     </>
   )
+}
+
+type StaticProps = {
+  stats: Stats
+}
+
+// TODO extract each retireval, make it async
+export const getStaticProps: GetStaticProps<StaticProps> = async (context) => {
+  try {
+    let stats: Stats = {
+      instagram: 0,
+      twitter: 0,
+      tiktok: 0,
+      youtube: 0,
+      twitch: 0
+    };
+
+    // TWITTER
+    const twitterRes = await twitterClient.users.findUserByUsername('zaemadethis', {
+      'user.fields': ['public_metrics']
+    });
+    
+    stats.twitter = twitterRes.data?.public_metrics?.followers_count!;
+
+    // TODO complete TikTok implementation (redirect_uri issue, MUST log in to TikTok, NEED TikTok support)
+    // TIKTOK
+    // const csrfState = Math.random().toString(36).substring(2);
+    
+    // const url: string = `https://www.tiktok.com/auth/authorize?client_key=${process.env.TIKTOK_CLIENT_KEY!}`
+    //   + '&scope=user.info.basic'
+    //   + '&response_type=code'
+    //   + '&redirect_uri=/'
+    //   + `&state=${csrfState}`;
+
+    // console.log(url)
+
+    // TODO complete Instagram implementation (verify buisness account, get app access token)
+    // INSTAGRAM
+    // console.log(await (await fetch(`https://graph.facebook.com/v15.0/1715495171910357?fields=followed_by_count&access_token=${process.env.INSTAGRAM_ACCESS_TOKEN}`)).json());
+
+    // YOUTUBE
+    const youtubeClient = new youtube_v3.Youtube({
+      auth: process.env.YOUTUBE_API_KEY!,
+    });
+
+    const youtubeRes = await youtubeClient.channels.list({ id: ['UCMMDfi3G5xXLj7vVqq9yr9w'], part: ['statistics'] });
+    stats.youtube = parseInt(youtubeRes.data.items![0].statistics?.subscriberCount as string);
+
+    // TWITCH
+    const twitchAuthHeaders = new Headers();
+    twitchAuthHeaders.append('Content-Type', 'application/x-www-form-urlencoded');
+
+    const twitchAuthBody = new URLSearchParams();
+    twitchAuthBody.append('client_id', process.env.TWITCH_CLIENT_ID!);
+    twitchAuthBody.append('client_secret', process.env.TWITCH_CLIENT_SECRET!);
+    twitchAuthBody.append('grant_type', 'client_credentials');
+
+    const twitchToken = await fetch('https://id.twitch.tv/oauth2/token', {
+      headers: twitchAuthHeaders,
+      body: twitchAuthBody,
+      method: 'POST'
+    });
+
+    const twitchHeaders = new Headers();
+    twitchHeaders.append('Authorization', `Bearer ${(await twitchToken.json()).access_token}`)
+    twitchHeaders.append('Client-Id', process.env.TWITCH_CLIENT_ID!)
+
+    const twitchRes = await (await fetch('https://api.twitch.tv/helix/users/follows?to_id=522494547&first=1', {
+      headers: twitchHeaders
+    })).json();
+    stats.twitch = twitchRes.total;
+    
+    return {
+      props: {
+        stats: stats
+      },
+      revalidate: 10
+    }
+  } catch (error: any) {
+    console.error(error);
+    throw error;
+  }
 }
