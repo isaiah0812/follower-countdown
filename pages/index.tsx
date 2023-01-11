@@ -26,26 +26,25 @@ export default function Home({ stats }: StaticProps) {
         <title>Isaiah Bullard's Follower Count</title>
         <meta name="description" content="An app to track the follower count of Isaiah Bullard." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        {/* <link rel="icon" href="/favicon.ico" /> */}
       </Head>
-      <main style={{ backgroundColor: getBaseColor('navy-blue')}} className={styles.main}>
-        <RingProgress 
+      <main style={{ backgroundColor: getBaseColor('navy-blue') }} className={styles.main}>
+        <RingProgress
           roundCaps
           thickness={20}
           size={400}
           label={
             <Text color={getBaseColor('off-white')} align='center' style={{ fontSize: '4em' }} weight={700}>
-              420.69K
+              {instagram + twitter + tiktok + youtube + twitch}
             </Text>
           }
 
           // TODO REMOVE multipliers (only there for visibility)
           sections={[
-            { value: getPercentage(instagram) + 10, color: instagramColor, tooltip: `Instagram - ${instagram}`},
-            { value: getPercentage(twitter)* 500, color: twitterColor, tooltip: `Twitter - ${twitter}` },
+            { value: getPercentage(instagram) + 10, color: instagramColor, tooltip: `Instagram - ${instagram}` },
+            { value: getPercentage(twitter) * 500, color: twitterColor, tooltip: `Twitter - ${twitter}` },
             { value: getPercentage(tiktok) + 10, color: tiktokColor, tooltip: `TikTok - ${tiktok}` },
-            { value: getPercentage(youtube)* 500, color: youtubeColor, tooltip: `YouTube - ${youtube}` },
-            { value: getPercentage(twitch * 100)* 500, color: twitchColor, tooltip: `Twitch - ${twitch}` }
+            { value: getPercentage(youtube) * 500, color: youtubeColor, tooltip: `YouTube - ${youtube}` },
+            { value: getPercentage(twitch * 100) * 500, color: twitchColor, tooltip: `Twitch - ${twitch}` }
           ]}
         />
       </main>
@@ -72,24 +71,14 @@ export const getStaticProps: GetStaticProps<StaticProps> = async (context) => {
     const twitterRes = await twitterClient.users.findUserByUsername('zaemadethis', {
       'user.fields': ['public_metrics']
     });
-    
+
     stats.twitter = twitterRes.data?.public_metrics?.followers_count!;
 
     // TODO complete TikTok implementation (redirect_uri issue, MUST log in to TikTok, NEED TikTok support)
     // TIKTOK
-    // const csrfState = Math.random().toString(36).substring(2);
-    
-    // const url: string = `https://www.tiktok.com/auth/authorize?client_key=${process.env.TIKTOK_CLIENT_KEY!}`
-    //   + '&scope=user.info.basic'
-    //   + '&response_type=code'
-    //   + '&redirect_uri=/'
-    //   + `&state=${csrfState}`;
-
-    // console.log(url)
 
     // TODO complete Instagram implementation (verify buisness account, get app access token)
     // INSTAGRAM
-    // console.log(await (await fetch(`https://graph.facebook.com/v15.0/1715495171910357?fields=followed_by_count&access_token=${process.env.INSTAGRAM_ACCESS_TOKEN}`)).json());
 
     // YOUTUBE
     const youtubeClient = new youtube_v3.Youtube({
@@ -122,7 +111,7 @@ export const getStaticProps: GetStaticProps<StaticProps> = async (context) => {
       headers: twitchHeaders
     })).json();
     stats.twitch = twitchRes.total;
-    
+
     return {
       props: {
         stats: stats
